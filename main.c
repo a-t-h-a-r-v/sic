@@ -63,12 +63,14 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         if(strcmp(OPCODE, "START") == 0){
             STARTINGADDRESS = atoi(OPERAND);
             LOCCTR = STARTINGADDRESS;
+            fprintf(outputStream, "%s %s", OPCODE, OPERAND);
         }
     }
 
     else{
         STARTINGADDRESS = 0;
         LOCCTR = 0;
+        fprintf(outputStream, "%d %s %s", LOCCTR, OPCODE, OPERAND);
     }
     temp = readNextLine(codeStream);
     while(checkComment(temp)){
@@ -92,6 +94,8 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
 
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
+        printf("%d %s %s", LOCCTR, OPCODE, OPERAND);
+        fprintf(outputStream, "%d %s %s", LOCCTR, OPCODE, OPERAND);
         if(LABEL != NULL){
             if(findSymbol(symbols, LABEL)){
                 printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
@@ -107,7 +111,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         }
 
         int instructionLength = findInstructionLength(opcodes, OPCODE);
-        if(instructionLength == -1){
+        if(instructionLength != -1){
             LOCCTR += instructionLength;
         }
         else if(strcmp(OPCODE, "WORD") == 0){
@@ -124,7 +128,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         }
         else{
             printf("INVALID OPERATION CODE : %s", OPCODE);
-            return 1;
+            //return 1;
         }
         numOps = splitCodeLine(temp, codeLine);
 
@@ -140,6 +144,8 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             OPERAND = codeLine[2];
         }
     }
+
+    printf("%d", LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
