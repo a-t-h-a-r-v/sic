@@ -9,12 +9,22 @@ typedef struct symbolTable{
     struct symbolTable *next;
 }SYMTAB;
 
+typedef struct opcodeTable{
+    char mnemonic[20];
+    int instructionLength;
+    struct opcodeTable *next;
+}OPTAB;
+
 char* readNextLine(FILE* stream);
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName);
 int splitCodeLine(char* str, char codeLine[3][20]);
 SYMTAB* createSymtab(char symbol[], int locctr);
 void insertSymbol(SYMTAB **head, char symbol[], int locctr);
 bool findSymbol(SYMTAB* head, char symbol[]);
+OPTAB* createOpcode(char mnemonic[], int instructionLength);
+void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength);
+int findInstructionLength(OPTAB* head, char mnemonic[]);
+void readOpcodes(OPTAB** head, FILE* opcodeStream);
 bool checkComment(char codeLine[]);
 
 int main(int argc, char *argv[]){
@@ -64,9 +74,10 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     while(checkComment(temp)){
         temp = readNextLine(codeStream);
     }
-    printf("%s", temp);
     numOps = splitCodeLine(temp, codeLine);
     SYMTAB* symbols = NULL;
+    OPTAB* opcodes = NULL;
+    readOpcodes(&opcodes, opcodeStream);
 
     if(numOps == 2){
         OPCODE = codeLine[0];
@@ -94,10 +105,28 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         while(checkComment(temp)){
             temp = readNextLine(codeStream);
         }
-        printf("%s", temp);
+
+        int instructionLength = findInstructionLength(opcodes, OPCODE);
+        if(instructionLength == -1){
+            LOCCTR += instructionLength;
+        }
+        else if(strcmp(OPCODE, "WORD") == 0){
+            LOCCTR += 3;
+        }
+        else if(strcmp(OPCODE, "RESW") == 0){
+            LOCCTR += 3 * atoi(OPERAND);
+        }
+        else if(strcmp(OPCODE, "RESW") == 0){
+            LOCCTR += atoi(OPERAND);
+        }
+        else if(strcmp(OPCODE, "RESW") == 0){
+            LOCCTR += strlen(OPERAND) -3;
+        }
+        else{
+            printf("INVALID OPERATION CODE : %s", OPCODE);
+            return 1;
+        }
         numOps = splitCodeLine(temp, codeLine);
-        printf("%d", numOps);
-        SYMTAB* symbols = NULL;
 
         if(numOps == 2){
             OPCODE = codeLine[0];
@@ -188,13 +217,53 @@ bool checkComment(char codeLine[]){
     if(codeLine == NULL){
         return false;
     }
-    if(strlen(codeLine) < 2){
+    else if(strlen(codeLine) < 2){
         return false;
     }
-    else if(codeLine[0] == '/' && codeLine[1] == '/'){
-        return true;
+    return (codeLine[0] == '/' && codeLine[1] == '/');
+}
+
+OPTAB* createOpcode(char mnemonic[], int instructionLength){
+    OPTAB* newNode = (OPTAB*)malloc(sizeof(OPTAB));
+    newNode->instructionLength = instructionLength;
+    strcpy(newNode->mnemonic, mnemonic);
+    newNode->next = newNode;
+    return newNode;
+}
+void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength){
+    OPTAB* newNode = createOpcode(mnemonic, instructionLength);
+    if(*head == NULL){
+        *head = newNode;
+        newNode->next = *head;
     }
     else{
-        return false;
+        OPTAB* temp = *head;
+        while(temp->next != *head){
+            temp = temp->next;
+        }
+        temp->next = newNode;
+        newNode->next = *head;
+    }
+}
+int findInstructionLength(OPTAB* head, char mnemonic[]){
+    if(head != NULL){
+        OPTAB* temp = head;
+        do{
+            if(strcmp(temp->mnemonic, mnemonic) == 0){
+                return temp->instructionLength;
+            }
+            temp = temp->next;
+        }while(temp!=head);
+    }
+    return -1;
+}
+
+void readOpcodes(OPTAB** head, FILE* opcodeStream){
+    char* temp = readNextLine(opcodeStream);
+    char codeLine[3][20];
+    while(temp != NULL){
+        splitCodeLine(temp, codeLine);
+        insertOpcode(head, codeLine[0], atoi(codeLine[1]));
+        temp = readNextLine(opcodeStream);
     }
 }
