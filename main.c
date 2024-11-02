@@ -55,7 +55,6 @@ int main(int argc, char *argv[]){
     pass1(codeFileName, outputFileName, opcodeFileName);
     return 0;
 }
-
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName){
     FILE* codeStream = fopen(codeFileName, "r");
     if(codeStream == NULL){
@@ -85,7 +84,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         OPCODE = codeLine[0];
         OPERAND = codeLine[1];
         if(strcmp(OPCODE, "START") == 0){
-            STARTINGADDRESS = atoi(OPERAND);
+            STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
             LOCCTR = STARTINGADDRESS;
             fprintf(outputStream, "%s %s", OPCODE, OPERAND);
         }
@@ -205,7 +204,6 @@ int splitCodeLine(char* str, char codeLine[3][20]){
     }
     return i;
 }
-
 SYMTAB* createSymtab(char symbol[], int locctr){
     SYMTAB* newNode = (SYMTAB*)malloc(sizeof(SYMTAB));
     newNode->locctr = locctr;
@@ -213,7 +211,6 @@ SYMTAB* createSymtab(char symbol[], int locctr){
     newNode->next = newNode;
     return newNode;
 }
-
 void insertSymbol(SYMTAB **head, char symbol[], int locctr){
     SYMTAB* newNode = createSymtab(symbol, locctr);
     if(*head == NULL){
@@ -229,7 +226,6 @@ void insertSymbol(SYMTAB **head, char symbol[], int locctr){
         newNode->next = *head;
     }
 }
-
 bool findSymbol(SYMTAB* head, char symbol[]){
     if(head != NULL){
         SYMTAB* temp = head;
@@ -242,7 +238,6 @@ bool findSymbol(SYMTAB* head, char symbol[]){
     }
     return false;
 }
-
 bool checkComment(char codeLine[]){
     if(codeLine == NULL){
         return false;
@@ -252,7 +247,6 @@ bool checkComment(char codeLine[]){
     }
     return (codeLine[0] == '/' && codeLine[1] == '/');
 }
-
 OPTAB* createOpcode(char mnemonic[], int instructionLength){
     OPTAB* newNode = (OPTAB*)malloc(sizeof(OPTAB));
     newNode->instructionLength = instructionLength;
@@ -287,7 +281,6 @@ int findInstructionLength(OPTAB* head, char mnemonic[]){
     }
     return -1;
 }
-
 void readOpcodes(OPTAB** head, FILE* opcodeStream){
     char* temp = readNextLine(opcodeStream);
     char codeLine[3][20];
@@ -297,7 +290,6 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
         temp = readNextLine(opcodeStream);
     }
 }
-
 void printHelp(char argv[]){
     printf("Usage : %s INPUTFILENAME OUTPUTFILENAME [-optionType option]...\n", argv);
     printf("Options:\n");
