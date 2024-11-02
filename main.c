@@ -43,10 +43,10 @@ int main(int argc, char *argv[]){
                 return 1;
             }
             else{
-                if(strcmp(argv[i], "-o") == 0){
+                if((strcmp(argv[i], "-o") == 0) || (strcmp(argv[i], "--opcode") == 0)){
                     opcodeFileName = argv[i+1];
                 } 
-                else if((strcmp(argv[i], "-h") == 0) || strcmp(argv[i], "help") == 0){
+                else if((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "help") == 0)){
                     opcodeFileName = argv[i+1];
                 }
             }
@@ -94,7 +94,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     else{
         STARTINGADDRESS = 0;
         LOCCTR = 0;
-        fprintf(outputStream, "%d %s %s", LOCCTR, OPCODE, OPERAND);
+        fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
     }
     temp = readNextLine(codeStream);
     while(checkComment(temp)){
@@ -119,7 +119,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
         printf("%d %s %s", LOCCTR, OPCODE, OPERAND);
-        fprintf(outputStream, "%d %s %s", LOCCTR, OPCODE, OPERAND);
+        fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
         if(LABEL != NULL){
             if(findSymbol(symbols, LABEL)){
                 printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
@@ -301,6 +301,6 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
 void printHelp(char argv[]){
     printf("Usage : %s INPUTFILENAME OUTPUTFILENAME [-optionType option]...\n", argv);
     printf("Options:\n");
-    printf("  -o opcodeFile	: Specifies the file for reading opcodes from.");
-    printf("  -h opcodeFile	: Prints this help message");
+    printf("  -o, --opcode opcodeFile	: Specifies the file for reading opcodes from.\n");
+    printf("  -h, --help opcodeFile	: Prints this help message\n");
 }
