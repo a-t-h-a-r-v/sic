@@ -26,9 +26,33 @@ void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength);
 int findInstructionLength(OPTAB* head, char mnemonic[]);
 void readOpcodes(OPTAB** head, FILE* opcodeStream);
 bool checkComment(char codeLine[]);
+void printHelp(char argv[]);
 
 int main(int argc, char *argv[]){
-    pass1("temp1", "temp2", "temp3");
+    char *opcodeFileName = "opcode";
+    if(argc < 3){
+        printHelp(argv[0]);
+        return 1;
+    }
+    char *codeFileName = argv[1];
+    char *outputFileName = argv[2];
+    if(argc > 3){
+        for(int i=3;i<argc;i+=2){
+            if((argc - 3)%2 == 1){
+                printHelp(argv[0]);
+                return 1;
+            }
+            else{
+                if(strcmp(argv[i], "-o") == 0){
+                    opcodeFileName = argv[i+1];
+                } 
+                else if((strcmp(argv[i], "-h") == 0) || strcmp(argv[i], "help") == 0){
+                    opcodeFileName = argv[i+1];
+                }
+            }
+        }
+    }
+    pass1(codeFileName, outputFileName, opcodeFileName);
     return 0;
 }
 
@@ -272,4 +296,11 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
         insertOpcode(head, codeLine[0], atoi(codeLine[1]));
         temp = readNextLine(opcodeStream);
     }
+}
+
+void printHelp(char argv[]){
+    printf("Usage : %s INPUTFILENAME OUTPUTFILENAME [-optionType option]...\n", argv);
+    printf("Options:\n");
+    printf("  -o opcodeFile	: Specifies the file for reading opcodes from.");
+    printf("  -h opcodeFile	: Prints this help message");
 }
