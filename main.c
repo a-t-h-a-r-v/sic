@@ -80,13 +80,35 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         OPERAND = codeLine[2];
     }
 
-    if(LABEL != NULL){
-        if(findSymbol(symbols, LABEL)){
-            printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
-            return 1;
+    while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
+        if(LABEL != NULL){
+            if(findSymbol(symbols, LABEL)){
+                printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
+                return 1;
+            }
+            else{
+                insertSymbol(&symbols, LABEL, LOCCTR);
+            }
         }
-        else{
-            insertSymbol(&symbols, LABEL, LOCCTR);
+        temp = readNextLine(codeStream);
+        while(checkComment(temp)){
+            temp = readNextLine(codeStream);
+        }
+        printf("%s", temp);
+        numOps = splitCodeLine(temp, codeLine);
+        printf("%d", numOps);
+        SYMTAB* symbols = NULL;
+
+        if(numOps == 2){
+            OPCODE = codeLine[0];
+            OPERAND = codeLine[1];
+            LABEL = NULL;
+        }
+
+        else if(numOps == 3){
+            LABEL = codeLine[0];
+            OPCODE = codeLine[1];
+            OPERAND = codeLine[2];
         }
     }
 
@@ -163,6 +185,9 @@ bool findSymbol(SYMTAB* head, char symbol[]){
 }
 
 bool checkComment(char codeLine[]){
+    if(codeLine == NULL){
+        return false;
+    }
     if(strlen(codeLine) < 2){
         return false;
     }
