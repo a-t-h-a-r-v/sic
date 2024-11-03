@@ -1,5 +1,6 @@
 #include "../include/sic.h"
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName){
+    int numOfLines = 0;
     FILE* codeStream = fopen(codeFileName, "r");
     if(codeStream == NULL){
         perror("Error opening input file");
@@ -31,6 +32,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
             LOCCTR = STARTINGADDRESS;
             fprintf(outputStream, "%s %s", OPCODE, OPERAND);
+            numOfLines++;
         }
     }
 
@@ -38,6 +40,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         STARTINGADDRESS = 0;
         LOCCTR = 0;
         fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
+            numOfLines++;
     }
     temp = readNextLine(codeStream);
     while(checkComment(temp)){
@@ -61,8 +64,8 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
 
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
-        printf("%d %s %s", LOCCTR, OPCODE, OPERAND);
         fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
+            numOfLines++;
         if(LABEL != NULL){
             if(findSymbol(symbols, LABEL)){
                 printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
@@ -112,7 +115,8 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         }
     }
 
-    printf("%d", LOCCTR - STARTINGADDRESS);
+    printf("%d lines written in %s \n", numOfLines, outputFileName);
+    printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
