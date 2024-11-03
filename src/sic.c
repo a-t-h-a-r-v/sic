@@ -31,7 +31,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         if(strcmp(OPCODE, "START") == 0){
             STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
             LOCCTR = STARTINGADDRESS;
-            fprintf(outputStream, "%s %s", OPCODE, OPERAND);
+            fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
             numOfLines++;
         }
     }
@@ -39,8 +39,20 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     else{
         STARTINGADDRESS = 0;
         LOCCTR = 0;
-        fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
-            numOfLines++;
+        if(numOps == 2){
+            OPCODE = codeLine[0];
+            OPERAND = codeLine[1];
+            LABEL = NULL;
+        fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+        }
+
+        else if(numOps == 3){
+            LABEL = codeLine[0];
+            OPCODE = codeLine[1];
+            OPERAND = codeLine[2];
+        fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+        }
+        numOfLines++;
     }
     temp = readNextLine(codeStream);
     while(checkComment(temp)){
@@ -64,11 +76,18 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
 
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
-        fprintf(outputStream, "%X %s %s", LOCCTR, OPCODE, OPERAND);
-            numOfLines++;
+        if(LABEL != NULL){
+            fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+
+        }
+        else{
+            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+
+        }
+        numOfLines++;
         if(LABEL != NULL){
             if(findSymbol(symbols, LABEL)){
-                printf("DUPLICATE SYMBOL FOUND : %s", LABEL);
+                printf("DUPLICATE SYMBOL FOUND : %s\n", LABEL);
                 return 1;
             }
             else{
@@ -90,15 +109,15 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         else if(strcmp(OPCODE, "RESW") == 0){
             LOCCTR += 3 * atoi(OPERAND);
         }
-        else if(strcmp(OPCODE, "RESW") == 0){
+        else if(strcmp(OPCODE, "RESB") == 0){
             LOCCTR += atoi(OPERAND);
         }
-        else if(strcmp(OPCODE, "RESW") == 0){
+        else if(strcmp(OPCODE, "BYTE") == 0){
             LOCCTR += strlen(OPERAND) -3;
         }
         else{
             printf("INVALID OPERATION CODE : %s", OPCODE);
-            //return 1;
+            return 1;
         }
         numOps = splitCodeLine(temp, codeLine);
 
@@ -146,6 +165,14 @@ int splitCodeLine(char* str, char codeLine[3][20]){
     int lengthTemp = strlen(codeLine[2]);
     if(codeLine[2][lengthTemp-1] == '\n'){
         codeLine[2][lengthTemp-1] = '\0';
+    }
+    lengthTemp = strlen(codeLine[1]);
+    if(codeLine[1][lengthTemp-1] == '\n'){
+        codeLine[1][lengthTemp-1] = '\0';
+    }
+    lengthTemp = strlen(codeLine[0]);
+    if(codeLine[0][lengthTemp-1] == '\n'){
+        codeLine[0][lengthTemp-1] = '\0';
     }
     if(codeLine[0][0] == '\0'){
         return 0;
