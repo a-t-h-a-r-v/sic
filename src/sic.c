@@ -152,6 +152,13 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             OPERAND = codeLine[2];
         }
     }
+    if(LABEL != NULL){
+        fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+    }
+    else{
+        fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+
+    }
     writeSymtabToFile(symtabStream, symbols);
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
