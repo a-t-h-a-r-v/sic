@@ -163,16 +163,11 @@ int splitCodeLine(char* str, char codeLine[3][20]){
         i++;
     }
     int lengthTemp = strlen(codeLine[2]);
-    if(codeLine[2][lengthTemp-1] == '\n'){
-        codeLine[2][lengthTemp-1] = '\0';
-    }
-    lengthTemp = strlen(codeLine[1]);
-    if(codeLine[1][lengthTemp-1] == '\n'){
-        codeLine[1][lengthTemp-1] = '\0';
-    }
-    lengthTemp = strlen(codeLine[0]);
-    if(codeLine[0][lengthTemp-1] == '\n'){
-        codeLine[0][lengthTemp-1] = '\0';
+    for(int i=0;i<3;i++){
+        lengthTemp = strlen(codeLine[i]);
+        if(codeLine[i][lengthTemp-1] == '\n'){
+            codeLine[i][lengthTemp-1] = '\0';
+        }
     }
     if(codeLine[0][0] == '\0'){
         return 0;
