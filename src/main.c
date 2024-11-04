@@ -2,6 +2,7 @@
 
 int main(int argc, char *argv[]){
     char *opcodeFileName = "opcode";
+    char *symtabFileName = "opcode";
     if(argc < 3){
         printHelp(argv[0]);
         return 1;
@@ -18,12 +19,20 @@ int main(int argc, char *argv[]){
                 if((strcmp(argv[i], "-o") == 0) || (strcmp(argv[i], "--opcode") == 0)){
                     opcodeFileName = argv[i+1];
                 }
+                else if((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--symtab") == 0)){
+                    symtabFileName = argv[i+1];
+                }
                 else if((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "help") == 0)){
-                    opcodeFileName = argv[i+1];
+                    printHelp(argv[0]);
+                    return 1;
+                }
+                else{
+                    printHelp(argv[0]);
+                    return 1;
                 }
             }
         }
     }
-    pass1(codeFileName, outputFileName, opcodeFileName);
+    pass1(codeFileName, outputFileName, opcodeFileName, symtabFileName);
     return 0;
 }

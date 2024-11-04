@@ -1,5 +1,5 @@
 #include "sic.h"
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName){
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName){
     int numOfLines = 0;
     FILE* codeStream = fopen(codeFileName, "r");
     if(codeStream == NULL){
@@ -13,6 +13,11 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
     FILE* opcodeStream = fopen(opcodeFileName, "r");
     if(opcodeStream == NULL){
+        perror("Error opening input file");
+        return 1;
+    }
+    FILE* symtabStream = fopen(symtabFileName, "w");
+    if(symtabStream == NULL){
         perror("Error opening input file");
         return 1;
     }
@@ -133,6 +138,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             OPERAND = codeLine[2];
         }
     }
+    writeSymtabToFile(symtabStream, symbols);
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
     printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
@@ -174,6 +180,7 @@ int splitCodeLine(char* str, char codeLine[3][20]){
     }
     return i;
 }
+
 SYMTAB* createSymtab(char symbol[], int locctr){
     SYMTAB* newNode = (SYMTAB*)malloc(sizeof(SYMTAB));
     newNode->locctr = locctr;
@@ -181,6 +188,7 @@ SYMTAB* createSymtab(char symbol[], int locctr){
     newNode->next = newNode;
     return newNode;
 }
+
 void insertSymbol(SYMTAB **head, char symbol[], int locctr){
     SYMTAB* newNode = createSymtab(symbol, locctr);
     if(*head == NULL){
@@ -196,6 +204,7 @@ void insertSymbol(SYMTAB **head, char symbol[], int locctr){
         newNode->next = *head;
     }
 }
+
 bool findSymbol(SYMTAB* head, char symbol[]){
     if(head != NULL){
         SYMTAB* temp = head;
@@ -208,6 +217,7 @@ bool findSymbol(SYMTAB* head, char symbol[]){
     }
     return false;
 }
+
 bool checkComment(char codeLine[]){
     if(codeLine == NULL){
         return false;
@@ -224,6 +234,7 @@ OPTAB* createOpcode(char mnemonic[], int instructionLength){
     newNode->next = newNode;
     return newNode;
 }
+
 void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength){
     OPTAB* newNode = createOpcode(mnemonic, instructionLength);
     if(*head == NULL){
@@ -239,6 +250,7 @@ void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength){
         newNode->next = *head;
     }
 }
+
 int findInstructionLength(OPTAB* head, char mnemonic[]){
     if(head != NULL){
         OPTAB* temp = head;
@@ -251,6 +263,7 @@ int findInstructionLength(OPTAB* head, char mnemonic[]){
     }
     return -1;
 }
+
 void readOpcodes(OPTAB** head, FILE* opcodeStream){
     char* temp = readNextLine(opcodeStream);
     char codeLine[3][20];
@@ -260,9 +273,22 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
         temp = readNextLine(opcodeStream);
     }
 }
+
 void printHelp(char argv[]){
     printf("Usage : %s INPUTFILENAME OUTPUTFILENAME [-optionType option]...\n", argv);
     printf("Options:\n");
     printf("  -o, --opcode opcodeFile	: Specifies the file for reading opcodes from.\n");
     printf("  -h, --help opcodeFile	: Prints this help message\n");
 }
+
+int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
+    if(head != NULL){
+        SYMTAB* temp = head;
+        do{
+            fprintf(symtabStream, "%s\t%d\n", temp->symbol, temp->locctr);
+            temp = temp->next;
+        }while(temp!= head);
+    }
+    return -1;
+}
+

@@ -19,7 +19,7 @@ typedef struct opcodeTable{
 }OPTAB;
 
 char* readNextLine(FILE* stream);
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName);
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName);
 int splitCodeLine(char* str, char codeLine[3][20]);
 SYMTAB* createSymtab(char symbol[], int locctr);
 void insertSymbol(SYMTAB **head, char symbol[], int locctr);
@@ -30,5 +30,6 @@ int findInstructionLength(OPTAB* head, char mnemonic[]);
 void readOpcodes(OPTAB** head, FILE* opcodeStream);
 bool checkComment(char codeLine[]);
 void printHelp(char argv[]);
+int writeSymtabToFile(FILE* symtabStream, SYMTAB* head);
 
 #endif
