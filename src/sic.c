@@ -1,5 +1,5 @@
 #include "sic.h"
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName){
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* delimeter){
     int numOfLines = 0;
     FILE* codeStream = fopen(codeFileName, "r");
     if(codeStream == NULL){
@@ -29,7 +29,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     int LOCCTR, STARTINGADDRESS;
 
     char *temp = readNextLine(codeStream);
-    int numOps = splitCodeLine(temp, codeLine);
+    int numOps = splitCodeLine(temp, codeLine, delimeter);
     if(numOps == 2){
         OPCODE = codeLine[0];
         OPERAND = codeLine[1];
@@ -63,7 +63,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     while(checkComment(temp)){
         temp = readNextLine(codeStream);
     }
-    numOps = splitCodeLine(temp, codeLine);
+    numOps = splitCodeLine(temp, codeLine, delimeter);
     SYMTAB* symbols = NULL;
     OPTAB* opcodes = NULL;
     readOpcodes(&opcodes, opcodeStream);
@@ -120,11 +120,25 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         else if(strcmp(OPCODE, "BYTE") == 0){
             LOCCTR += strlen(OPERAND) -3;
         }
+        else if(OPCODE[0] == '+'){
+            char *token = strtok(OPCODE, "+");
+            instructionLength = -1;
+            if(token != NULL){
+                instructionLength = findInstructionLength(opcodes, token);
+            }
+            if(instructionLength == 3){
+                LOCCTR += 4;
+            }
+            else{
+                printf("INVALID OPCODE : %s", OPCODE);
+                return 1;
+            }
+        }
         else{
             printf("INVALID OPERATION CODE : %s", OPCODE);
             return 1;
         }
-        numOps = splitCodeLine(temp, codeLine);
+        numOps = splitCodeLine(temp, codeLine, delimeter);
 
         if(numOps == 2){
             OPCODE = codeLine[0];
@@ -157,7 +171,7 @@ char* readNextLine(FILE* stream){
     return NULL;
 }
 
-int splitCodeLine(char* str, char codeLine[3][20]){
+int splitCodeLine(char* str, char codeLine[3][20], const char* delimeter){
     char* token = strtok(str, " ");
     int i = 0;
     codeLine[0][0] = '\0';
@@ -268,7 +282,7 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
     char* temp = readNextLine(opcodeStream);
     char codeLine[3][20];
     while(temp != NULL){
-        splitCodeLine(temp, codeLine);
+        splitCodeLine(temp, codeLine, " ");
         insertOpcode(head, codeLine[0], atoi(codeLine[1]));
         temp = readNextLine(opcodeStream);
     }
@@ -285,7 +299,7 @@ int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
     if(head != NULL){
         SYMTAB* temp = head;
         do{
-            fprintf(symtabStream, "%s\t%d\n", temp->symbol, temp->locctr);
+            fprintf(symtabStream, "%s\t%X\n", temp->symbol, temp->locctr);
             temp = temp->next;
         }while(temp!= head);
     }

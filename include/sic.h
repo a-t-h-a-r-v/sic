@@ -19,8 +19,8 @@ typedef struct opcodeTable{
 }OPTAB;
 
 char* readNextLine(FILE* stream);
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName);
-int splitCodeLine(char* str, char codeLine[3][20]);
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* delimeter);
+int splitCodeLine(char* str, char codeLine[3][20], const char *delimeter);
 SYMTAB* createSymtab(char symbol[], int locctr);
 void insertSymbol(SYMTAB **head, char symbol[], int locctr);
 bool findSymbol(SYMTAB* head, char symbol[]);

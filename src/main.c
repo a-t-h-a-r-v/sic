@@ -2,7 +2,8 @@
 
 int main(int argc, char *argv[]){
     char *opcodeFileName = "opcode";
-    char *symtabFileName = "opcode";
+    char *symtabFileName = "symtab";
+    char *delimeter = " ";
     if(argc < 3){
         printHelp(argv[0]);
         return 1;
@@ -22,6 +23,15 @@ int main(int argc, char *argv[]){
                 else if((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--symtab") == 0)){
                     symtabFileName = argv[i+1];
                 }
+                else if((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "--delimeter") == 0)){
+                    if(strcmp(argv[i+1],"space")){
+                        delimeter = " ";
+                    }
+                    else if(strcmp(argv[i+1],"tab")){
+                        delimeter = "\t";
+                    }
+                    delimeter = argv[i+1];
+                }
                 else if((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "help") == 0)){
                     printHelp(argv[0]);
                     return 1;
@@ -33,6 +43,6 @@ int main(int argc, char *argv[]){
             }
         }
     }
-    pass1(codeFileName, outputFileName, opcodeFileName, symtabFileName);
+    pass1(codeFileName, outputFileName, opcodeFileName, symtabFileName, delimeter);
     return 0;
 }
