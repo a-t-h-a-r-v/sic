@@ -1,4 +1,4 @@
-#include "../include/sic.h"
+#include "sic.h"
 
 int main(int argc, char *argv[]){
     char *opcodeFileName = "opcode";

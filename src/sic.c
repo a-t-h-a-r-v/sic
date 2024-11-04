@@ -1,4 +1,4 @@
-#include "../include/sic.h"
+#include "sic.h"
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName){
     int numOfLines = 0;
     FILE* codeStream = fopen(codeFileName, "r");
