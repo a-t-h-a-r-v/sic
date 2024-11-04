@@ -2,7 +2,7 @@
 CC = gcc
 
 # Compiler flags
-CFLAGS = -Wall -Iinclude
+CFLAGS = -Wall -Iinclude -g
 
 # Source and object files
 SRC = src/main.c src/sic.c
