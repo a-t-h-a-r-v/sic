@@ -298,8 +298,10 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream){
 void printHelp(char argv[]){
     printf("Usage : %s INPUTFILENAME OUTPUTFILENAME [-optionType option]...\n", argv);
     printf("Options:\n");
-    printf("  -o, --opcode opcodeFile	: Specifies the file for reading opcodes from.\n");
-    printf("  -h, --help opcodeFile	: Prints this help message\n");
+    printf("  -o, --opcode opcodeFile\t: Specifies the file for reading opcodes from.\n");
+    printf("  -s, --symtab symtabFile\t: Specifies the file to write symbol table to.\n");
+    printf("  -d, --delimeter delimeter\t: Prints this help message.\n");
+    printf("  -h, --help\t\t\t: Prints this help message.\n");
 }
 
 int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
