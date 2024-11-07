@@ -24,10 +24,10 @@ int main(int argc, char *argv[]){
                     symtabFileName = argv[i+1];
                 }
                 else if((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "--delimeter") == 0)){
-                    if(strcmp(argv[i+1],"space")){
+                    if(strcmp(argv[i+1],"space") == 0){
                         delimeter = " ";
                     }
-                    else if(strcmp(argv[i+1],"tab")){
+                    else if(strcmp(argv[i+1],"tab") == 0){
                         delimeter = "\t";
                     }
                     delimeter = argv[i+1];

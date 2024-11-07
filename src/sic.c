@@ -1,35 +1,34 @@
 #include "sic.h"
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* delimeter){
-    int numOfLines = 0;
-    FILE* codeStream = fopen(codeFileName, "r");
+    int numOfLines = 0, LOCCTR, STARTINGADDRESS, numOps;
+    char codeLine[3][20], *OPCODE, *OPERAND, *LABEL, *temp;
+    FILE *codeStream, *outputStream, *opcodeStream, *symtabStream;
+    SYMTAB* symbols = NULL;
+    OPTAB* opcodes = NULL;
+
+    codeStream = fopen(codeFileName, "r");
     if(codeStream == NULL){
         perror("Error opening input file");
         return 1;
     }
-    FILE* outputStream = fopen(outputFileName, "w");
+    outputStream = fopen(outputFileName, "w");
     if(outputStream == NULL){
         perror("Error opening input file");
         return 1;
     }
-    FILE* opcodeStream = fopen(opcodeFileName, "r");
+    opcodeStream = fopen(opcodeFileName, "r");
     if(opcodeStream == NULL){
         perror("Error opening input file");
         return 1;
     }
-    FILE* symtabStream = fopen(symtabFileName, "w");
+    symtabStream = fopen(symtabFileName, "w");
     if(symtabStream == NULL){
         perror("Error opening input file");
         return 1;
     }
 
-    char codeLine[3][20];
-    char *OPCODE;
-    char *OPERAND;
-    char *LABEL;
-    int LOCCTR, STARTINGADDRESS;
-
-    char *temp = readNextLine(codeStream);
-    int numOps = splitCodeLine(temp, codeLine, delimeter);
+    temp = readNextLine(codeStream);
+    numOps = splitCodeLine(temp, codeLine, delimeter);
     if(numOps == 2){
         OPCODE = codeLine[0];
         OPERAND = codeLine[1];
@@ -39,9 +38,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
             numOfLines++;
         }
-    }
-
-    else{
+    } else{
         STARTINGADDRESS = 0;
         LOCCTR = 0;
         if(numOps == 2){
@@ -64,8 +61,6 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         temp = readNextLine(codeStream);
     }
     numOps = splitCodeLine(temp, codeLine, delimeter);
-    SYMTAB* symbols = NULL;
-    OPTAB* opcodes = NULL;
     readOpcodes(&opcodes, opcodeStream);
 
     if(numOps == 2){
@@ -82,12 +77,20 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 2 || numOps == 3)){
         if(LABEL != NULL){
-            fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
-
+            if(strcmp(OPCODE, "BASE") == 0){
+                fprintf(outputStream, "%s %s %s\n", LABEL, OPCODE, OPERAND);
+            }
+            else{
+                fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+            }
         }
         else{
-            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
-
+            if(strcmp(OPCODE, "BASE") == 0){
+                fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
+            }
+            else{
+                fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+            }
         }
         numOfLines++;
         if(LABEL != NULL){
@@ -120,6 +123,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         else if(strcmp(OPCODE, "BYTE") == 0){
             LOCCTR += strlen(OPERAND) -3;
         }
+        else if(strcmp(OPCODE, "BASE") == 0){}
         else if(OPCODE[0] == '+'){
             char *token = strtok(OPCODE, "+");
             instructionLength = -1;
@@ -153,11 +157,20 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         }
     }
     if(LABEL != NULL){
-        fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+        if(strcmp(OPCODE, "BASE") == 0){
+            fprintf(outputStream, "%s %s %s\n", LABEL, OPCODE, OPERAND);
+        }
+        else{
+            fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+        }
     }
     else{
-        fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
-
+        if(strcmp(OPCODE, "BASE") == 0){
+            fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
+        }
+        else{
+            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+        }
     }
     writeSymtabToFile(symtabStream, symbols);
 
@@ -179,14 +192,14 @@ char* readNextLine(FILE* stream){
 }
 
 int splitCodeLine(char* str, char codeLine[3][20], const char* delimeter){
-    char* token = strtok(str, " ");
+    char* token = strtok(str, delimeter);
     int i = 0;
     codeLine[0][0] = '\0';
     codeLine[1][0] = '\0';
     codeLine[2][0] = '\0';
     while((token != NULL) && (i != 3)){
         strcpy(codeLine[i], token);
-        token = strtok(NULL, " ");
+        token = strtok(NULL, delimeter);
         i++;
     }
     int lengthTemp = strlen(codeLine[2]);
@@ -314,4 +327,3 @@ int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
     }
     return -1;
 }
-
