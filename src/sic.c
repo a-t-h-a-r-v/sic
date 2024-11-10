@@ -35,7 +35,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         if(strcmp(OPCODE, "START") == 0){
             STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
             LOCCTR = STARTINGADDRESS;
-            fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
+            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
             numOfLines++;
         }
     } else{
@@ -326,4 +326,13 @@ int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
         }while(temp!= head);
     }
     return -1;
+}
+
+bool checkNumber(char str[]){
+    for(int i=0;i<strlen(str);i++){
+        if((str[i] < 48) || (str[i] > 57)){
+            return false;
+        }
+    }
+    return true;
 }
