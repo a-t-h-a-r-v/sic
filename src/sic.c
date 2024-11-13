@@ -175,20 +175,6 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             LOCCTR += strlen(OPERAND) -3;
         }
         else if(strcmp(OPCODE, "BASE") == 0){}
-        else if(OPCODE[0] == '+'){
-            char *token = strtok(OPCODE, "+");
-            instructionLength = -1;
-            if(token != NULL){
-                instructionLength = findInstructionLength(opcodes, token);
-            }
-            if(instructionLength == 3){
-                LOCCTR += 4;
-            }
-            else{
-                printf("INVALID OPCODE : %s", OPCODE);
-                return 1;
-            }
-        }
         else{
             printf("INVALID OPERATION CODE : %s", OPCODE);
             return 1;
@@ -369,6 +355,15 @@ void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength, char opc
 
 int findInstructionLength(OPTAB* head, char mnemonic[]){
     if(head != NULL){
+        if(mnemonic[0] == '+'){
+            char *token = strtok(mnemonic, "+");
+            if((token != NULL) && findInstructionLength(head, token) == 3){
+                return 4;
+            }
+            else{
+                return -1;
+            }
+        }
         OPTAB* temp = head;
         do{
             if(strcmp(temp->mnemonic, mnemonic) == 0){
