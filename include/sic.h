@@ -6,6 +6,13 @@
 #include<string.h>
 #include<stdlib.h>
 
+#define indirect_mask 32
+#define immediate_mask 16
+#define index_mask 8
+#define base_mask 4
+#define program_counter_mask 2
+#define extended_mask 1
+
 typedef struct symbolTable{
     char symbol[20];
     int locctr;
@@ -26,15 +33,19 @@ int splitCodeLine(char* str, char codeLine[][20], const char *delimeter, int siz
 SYMTAB* createSymtab(char symbol[], int locctr);
 void insertSymbol(SYMTAB **head, char symbol[], int locctr);
 bool findSymbol(SYMTAB* head, char symbol[]);
+int findSymbolAddress(SYMTAB* head, char symbol[]);
 OPTAB* createOpcode(char mnemonic[], int instructionLength, char opcode[]);
 void insertOpcode(OPTAB **head, char mnemonic[], int instructionLength, char opcode[]);
 int findInstructionLength(OPTAB* head, char mnemonic[]);
+char* findOpcode(OPTAB* head, char mnemonic[]);
 void readOpcodes(OPTAB** head, FILE* opcodeStream);
 void readSymtab(SYMTAB** head, FILE* symtabStream);
 bool checkComment(char codeLine[]);
 void printHelp(char argv[]);
 int writeSymtabToFile(FILE* symtabStream, SYMTAB* head);
 bool checkNumber(char str[]);
+bool checkHex(char str[]);
+bool checkX(char str[]);
 char* tobinary(int n);
 
 #endif
