@@ -275,54 +275,48 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPERAND = intermediateLine[2];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
-                    fprintf(outputStream, " %X", firstThreeBits);
                 }
                 else if(OPERAND[0] == '#'){
                     firstThreeBits = firstThreeBits | immediate_mask;
                     char *token = strtok(OPERAND, "#");
-                    int lastThreeBits = atoi(token);
+                    lastThreeBits = atoi(token);
                     if(checkNumber(token)){
                         lastThreeBits = atoi(token);
                     }
                     else{
                         lastThreeBits = findSymbolAddress(symbols, token);
                     }
-                    if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
-                    }
-                    else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
-                    }
-                    else{
-                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
-                    }
                 }
                 else if(checkX(OPERAND)){
                     firstThreeBits = firstThreeBits | index_mask;
-                    fprintf(outputStream, " %X",firstThreeBits);
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
-                    int lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
-                    if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 0){
+                        lastThreeBits = ~lastThreeBits;
+                        lastThreeBits += 1;
                     }
-                    else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
-                    }
-                    else{
-                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
-                    }
+                }
+                if(lastThreeBits < 16){
+                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits < 256){
+                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else{
+                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
@@ -333,60 +327,163 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPERAND = intermediateLine[3];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+                fprintf(outputStream, "%s %s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
-                    fprintf(outputStream, " %3X", firstThreeBits);
                 }
                 else if(OPERAND[0] == '#'){
                     firstThreeBits = firstThreeBits | immediate_mask;
                     char *token = strtok(OPERAND, "#");
-                    int lastThreeBits = atoi(token);
+                    lastThreeBits = atoi(token);
                     if(checkNumber(token)){
                         lastThreeBits = atoi(token);
                     }
                     else{
                         lastThreeBits = findSymbolAddress(symbols, token);
                     }
-                    if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
-                    }
-                    else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
-                    }
-                    else{
-                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
-                    }
                 }
                 else if(checkX(OPERAND)){
                     firstThreeBits = firstThreeBits | index_mask;
-                    fprintf(outputStream, " %X",firstThreeBits);
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
-                    int lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
-                    if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 0){
+                        lastThreeBits = ~lastThreeBits;
+                        lastThreeBits += 1;
                     }
-                    else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
-                    }
-                    else{
-                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
-                    }
+                }
+                if(lastThreeBits < 16){
+                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits < 256){
+                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else{
+                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
     }
     temp = readNextLine(intermediateStream);
     numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
+    while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 3 || numOps == 4)){
+        if(strcmp(intermediateLine[0], "BASE") == 0){}
+        else if(numOps == 3){
+            ADDRESS = intermediateLine[0];
+            LABEL = NULL;
+            OPCODE = intermediateLine[1];
+            OPERAND = intermediateLine[2];
+            int instructionLength = findInstructionLength(opcodes, OPCODE);
+            if(instructionLength == 2){
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+            }
+            else if(instructionLength == 3){
+                char *currentOpcode = findOpcode(opcodes, OPCODE);
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
+                fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 0){
+                        lastThreeBits = ~lastThreeBits;
+                        lastThreeBits += 1;
+                    }
+                }
+                if(lastThreeBits < 16){
+                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits < 256){
+                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else{
+                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+        }
+        else if(numOps == 4){
+            ADDRESS = intermediateLine[0];
+            LABEL = intermediateLine[1];
+            OPCODE = intermediateLine[2];
+            OPERAND = intermediateLine[3];
+            int instructionLength = findInstructionLength(opcodes, OPCODE);
+            if(instructionLength == 2){
+                fprintf(outputStream, "%s %s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+            }
+            else if(instructionLength == 3){
+                char *currentOpcode = findOpcode(opcodes, OPCODE);
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
+                fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 0){
+                        lastThreeBits = ~lastThreeBits;
+                        lastThreeBits += 1;
+                    }
+                }
+                if(lastThreeBits < 16){
+                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits < 256){
+                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else{
+                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+        }
+        temp = readNextLine(intermediateStream);
+        numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
+    }
     if(strcmp(intermediateLine[0], "BASE") == 0){}
     else if((numOps == 2) && findInstructionLength(opcodes, intermediateLine[1]) != -1){
         char *temp1 = findOpcode(opcodes, intermediateLine[1]);
