@@ -281,6 +281,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -290,11 +291,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     firstThreeBits = firstThreeBits | immediate_mask;
                     char *token = strtok(OPERAND, "#");
                     int lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
                     if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%X", firstThreeBits, lastThreeBits);
+                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
                     }
                     else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%X", firstThreeBits, lastThreeBits);
+                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
                     }
                     else{
                         fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
@@ -303,6 +310,19 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(checkX(OPERAND)){
                     firstThreeBits = firstThreeBits | index_mask;
                     fprintf(outputStream, " %X",firstThreeBits);
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    int lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 16){
+                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
+                    }
+                    else if(lastThreeBits < 256){
+                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
+                    }
+                    else{
+                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
+                    }
                 }
             }
         }
@@ -319,20 +339,27 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
-                    fprintf(outputStream, " %X", firstThreeBits);
+                    fprintf(outputStream, " %3X", firstThreeBits);
                 }
                 else if(OPERAND[0] == '#'){
                     firstThreeBits = firstThreeBits | immediate_mask;
                     char *token = strtok(OPERAND, "#");
                     int lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
                     if(lastThreeBits < 16){
-                        fprintf(outputStream, " %3X00%X", firstThreeBits, lastThreeBits);
+                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
                     }
                     else if(lastThreeBits < 256){
-                        fprintf(outputStream, " %3X0%X", firstThreeBits, lastThreeBits);
+                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
                     }
                     else{
                         fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
@@ -341,6 +368,19 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(checkX(OPERAND)){
                     firstThreeBits = firstThreeBits | index_mask;
                     fprintf(outputStream, " %X",firstThreeBits);
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    int lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
+                    if(lastThreeBits < 16){
+                        fprintf(outputStream, " %3X00%1X", firstThreeBits, lastThreeBits);
+                    }
+                    else if(lastThreeBits < 256){
+                        fprintf(outputStream, " %3X0%2X", firstThreeBits, lastThreeBits);
+                    }
+                    else{
+                        fprintf(outputStream, " %3X%3X", firstThreeBits, lastThreeBits);
+                    }
                 }
             }
         }
@@ -527,7 +567,7 @@ void readSymtab(SYMTAB** head, FILE* symtabStream){
     char symtabLine[2][20];
     while(temp != NULL){
         splitCodeLine(temp, symtabLine, " ", 2);
-        insertSymbol(head, symtabLine[0], atoi(symtabLine[1]));
+        insertSymbol(head, symtabLine[0], (int)strtol(symtabLine[1], NULL, 16));
         temp = readNextLine(symtabStream);
     }
 }
@@ -583,4 +623,13 @@ bool checkX(char str[]){
         return false;
     }
     return false;
+}
+
+bool checkNumber(char str[]){
+    for(int i=0;i<strlen(str);i++){
+        if(str[i] < '0' || str[i] > '9'){
+            return false;
+        }
+    }
+    return true;
 }
