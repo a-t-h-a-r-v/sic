@@ -286,6 +286,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
+                    char *token = strtok(OPERAND, "@");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
                 }
                 else if(OPERAND[0] == '#'){
                     firstThreeBits = firstThreeBits | immediate_mask;
@@ -303,10 +311,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
                     if(lastThreeBits < 0){
-                        lastThreeBits = ~lastThreeBits;
-                        lastThreeBits += 1;
+                        lastThreeBits &= 0xFFF;
                     }
                 }
                 if(lastThreeBits < 16){
@@ -317,6 +326,59 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 else{
                     fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+            else if(instructionLength == 4){
+                char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    char *token = strtok(OPERAND, "@");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND);
+                }
+                if(lastThreeBits <= 0xF){
+                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFF){
+                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFF){
+                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFF){
+                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFFF){
+                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
@@ -355,10 +417,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
                     if(lastThreeBits < 0){
-                        lastThreeBits = ~lastThreeBits;
-                        lastThreeBits += 1;
+                        lastThreeBits &= 0xFFF;
                     }
                 }
                 if(lastThreeBits < 16){
@@ -369,6 +432,59 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 else{
                     fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+            else if(instructionLength == 4){
+                char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    char *token = strtok(OPERAND, "@");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND);
+                }
+                if(lastThreeBits <= 0xF){
+                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFF){
+                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFF){
+                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFF){
+                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFFF){
+                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
@@ -412,10 +528,12 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
                     if(lastThreeBits < 0){
-                        lastThreeBits = ~lastThreeBits;
-                        lastThreeBits += 1;
+                        //lastThreeBits *= -1;
+                        lastThreeBits &= 0xFFF;
                     }
                 }
                 if(lastThreeBits < 16){
@@ -426,6 +544,59 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 else{
                     fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+            else if(instructionLength == 4){
+                char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    char *token = strtok(OPERAND, "@");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND);
+                }
+                if(lastThreeBits <= 0xF){
+                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFF){
+                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFF){
+                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFF){
+                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFFF){
+                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
@@ -464,10 +635,12 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 if(OPERAND[0] != '#' && OPERAND[0] != '@'){
                     firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND) - (int)strtol(ADDRESS, NULL, 16) - instructionLength;
                     if(lastThreeBits < 0){
-                        lastThreeBits = ~lastThreeBits;
-                        lastThreeBits += 1;
+                        //lastThreeBits *= -1;
+                        lastThreeBits &= 0xFFF;
                     }
                 }
                 if(lastThreeBits < 16){
@@ -478,6 +651,59 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 else{
                     fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
+                }
+            }
+            else if(instructionLength == 4){
+                char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
+                currentOpcode[2] = '0';
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int lastThreeBits = 0;
+                fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
+                if(OPERAND[0] == '@'){
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    char *token = strtok(OPERAND, "@");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(OPERAND[0] == '#'){
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    char *token = strtok(OPERAND, "#");
+                    lastThreeBits = atoi(token);
+                    if(checkNumber(token)){
+                        lastThreeBits = atoi(token);
+                    }
+                    else{
+                        lastThreeBits = findSymbolAddress(symbols, token);
+                    }
+                }
+                else if(checkX(OPERAND)){
+                    firstThreeBits = firstThreeBits | index_mask;
+                }
+                if(OPERAND[0] != '#' && OPERAND[0] != '@'){
+                    firstThreeBits = firstThreeBits | program_counter_mask;
+                    firstThreeBits = firstThreeBits | indirect_mask;
+                    firstThreeBits = firstThreeBits | immediate_mask;
+                    lastThreeBits = findSymbolAddress(symbols, OPERAND);
+                }
+                if(lastThreeBits <= 0xF){
+                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFF){
+                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFF){
+                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFF){
+                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
+                }
+                else if(lastThreeBits <= 0xFFFFF){
+                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
         }
