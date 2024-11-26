@@ -42,17 +42,17 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         OPERAND = codeLine[1];
         STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
         LOCCTR = STARTINGADDRESS;
-        fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+        fprintf(outputStream, "%04X %s %s\n", LOCCTR, OPCODE, OPERAND);
         numOfLines++;
     }
-    else if((numOps == 3) && (strcmp(codeLine[0], "START") == 0)){
+    else if((numOps == 3) && (strcmp(codeLine[1], "START") == 0)){
         OPCODE = codeLine[1];
         OPERAND = codeLine[2];
         LABEL = codeLine[0];
         PROGRAMNAME = codeLine[0];
         STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
         LOCCTR = STARTINGADDRESS;
-        fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+        fprintf(outputStream, "%04X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
         numOfLines++;
     }
     else{
@@ -62,20 +62,20 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             OPCODE = codeLine[0];
             OPERAND = NULL;
             LABEL = NULL;
-            fprintf(outputStream, "%X %s\n", LOCCTR, OPCODE);
+            fprintf(outputStream, "%04X %s\n", LOCCTR, OPCODE);
         }
         if(numOps == 2){
             OPCODE = codeLine[0];
             OPERAND = codeLine[1];
             LABEL = NULL;
-            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+            fprintf(outputStream, "%04X %s %s\n", LOCCTR, OPCODE, OPERAND);
         }
 
         else if(numOps == 3){
             LABEL = codeLine[0];
             OPCODE = codeLine[1];
             OPERAND = codeLine[2];
-            fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+            fprintf(outputStream, "%04X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
         }
         numOfLines++;
         instructionLength = findInstructionLength(opcodes, OPCODE);
@@ -138,7 +138,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
                 fprintf(outputStream, "%s %s %s\n", LABEL, OPCODE, OPERAND);
             }
             else{
-                fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+                fprintf(outputStream, "%04X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
             }
         }
         else{
@@ -146,7 +146,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
                 fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
             }
             else{
-                fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+                fprintf(outputStream, "%04X %s %s\n", LOCCTR, OPCODE, OPERAND);
             }
         }
         numOfLines++;
@@ -204,7 +204,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             fprintf(outputStream, "%s %s %s\n", LABEL, OPCODE, OPERAND);
         }
         else{
-            fprintf(outputStream, "%X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
+            fprintf(outputStream, "%04X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
         }
     }
     else{
@@ -212,14 +212,14 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
             fprintf(outputStream, "%s %s\n", OPCODE, OPERAND);
         }
         else{
-            fprintf(outputStream, "%X %s %s\n", LOCCTR, OPCODE, OPERAND);
+            fprintf(outputStream, "%04X %s %s\n", LOCCTR, OPCODE, OPERAND);
         }
     }
     writeSymtabToFile(symtabStream, symbols);
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
     printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
-    fprintf(objectCodeStream, "H^%s^%X^%X\n", PROGRAMNAME, STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
+    fprintf(objectCodeStream, "H^%s^%04X^%04X\n", PROGRAMNAME, STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
@@ -291,13 +291,13 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
-                        fprintf(outputStream, "%X", OPERAND[i]);
+                        fprintf(outputStream, "%02X", OPERAND[i]);
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             else if(strcmp(OPCODE, "WORD") == 0){
-                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
             }
             else if(instructionLength == 2){
                 int firstReg = 0;
@@ -370,15 +370,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         lastThreeBits &= 0xFFF;
                     }
                 }
-                if(lastThreeBits < 16){
-                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits < 256){
-                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -417,21 +409,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
-                if(lastThreeBits <= 0xF){
-                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFF){
-                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFF){
-                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFFF){
-                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
             }
         }
         else if(numOps == 4){
@@ -450,13 +428,13 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 fprintf(outputStream, "%s %s %s %s ", ADDRESS, LABEL, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
-                        fprintf(outputStream, "%X", OPERAND[i]);
+                        fprintf(outputStream, "%02X", OPERAND[i]);
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
-                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -521,15 +499,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         lastThreeBits &= 0xFFF;
                     }
                 }
-                if(lastThreeBits < 16){
-                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits < 256){
-                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -568,21 +538,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
-                if(lastThreeBits <= 0xF){
-                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFF){
-                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFF){
-                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFFF){
-                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
             }
         }
     }
@@ -606,13 +562,13 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
-                        fprintf(outputStream, "%X", OPERAND[i]);
+                        fprintf(outputStream, "%02X", OPERAND[i]);
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[1], "WORD") == 0){
-                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -678,15 +634,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         lastThreeBits &= 0xFFF;
                     }
                 }
-                if(lastThreeBits < 16){
-                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits < 256){
-                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -725,21 +673,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
-                if(lastThreeBits <= 0xF){
-                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFF){
-                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFF){
-                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFFF){
-                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
             }
         }
         else if(numOps == 4){
@@ -755,16 +689,16 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
             }
             if(strcmp(intermediateLine[2], "BYTE") == 0){
-                fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
+                fprintf(outputStream, "%s %s %s %s ", ADDRESS, LABEL, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
-                        fprintf(outputStream, "%X", OPERAND[i]);
+                        fprintf(outputStream, "%02X", OPERAND[i]);
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
-                fprintf(outputStream, "%s %s %s %s %X\n", ADDRESS, LABEL, OPCODE, OPERAND, atoi(OPERAND));
+                fprintf(outputStream, "%s %s %s %s %06X\n", ADDRESS, LABEL, OPCODE, OPERAND, atoi(OPERAND));
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -830,15 +764,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         lastThreeBits &= 0xFFF;
                     }
                 }
-                if(lastThreeBits < 16){
-                    fprintf(outputStream, " %3X00%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits < 256){
-                    fprintf(outputStream, " %3X0%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%3X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -877,21 +803,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     firstThreeBits = firstThreeBits | immediate_mask;
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
-                if(lastThreeBits <= 0xF){
-                    fprintf(outputStream, " %3X0000%1X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFF){
-                    fprintf(outputStream, " %3X000%2X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFF){
-                    fprintf(outputStream, " %3X00%3X\n", firstThreeBits, lastThreeBits);
-                }
-                else if(lastThreeBits <= 0xFFFF){
-                    fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
-                }
-                else{
-                    fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
-                }
+                fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
             }
         }
         temp = readNextLine(intermediateStream);
