@@ -1,8 +1,8 @@
 #include "sic.h"
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* delimeter){
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* objectCodeFileName, const char* delimeter){
     int numOfLines = 0, LOCCTR, STARTINGADDRESS, numOps, instructionLength;
-    char codeLine[3][20], *OPCODE, *OPERAND, *LABEL, *temp, *PROGRAMNAME;
-    FILE *codeStream, *outputStream, *opcodeStream, *symtabStream;
+    char codeLine[3][20], *OPCODE, *OPERAND, *LABEL, *temp, *PROGRAMNAME = "";
+    FILE *codeStream, *outputStream, *opcodeStream, *symtabStream, *objectCodeStream;
     SYMTAB* symbols = NULL;
     OPTAB* opcodes = NULL;
 
@@ -23,6 +23,12 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
     symtabStream = fopen(symtabFileName, "w");
     if(symtabStream == NULL){
+        perror("Error opening input file");
+        return 1;
+    }
+
+    objectCodeStream = fopen(objectCodeFileName, "w");
+    if(objectCodeStream == NULL){
         perror("Error opening input file");
         return 1;
     }
@@ -213,6 +219,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
     printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
+    fprintf(objectCodeStream, "H^%s^%X^%X\n", PROGRAMNAME, STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
@@ -274,13 +281,58 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPCODE = intermediateLine[1];
             OPERAND = intermediateLine[2];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
-            if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+            if(strcmp(OPCODE, "RESB") == 0){
+                fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+            }
+            else if(strcmp(OPCODE, "RESW") == 0){
+                fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+            }
+            else if(strcmp(OPCODE, "BYTE") == 0){
+                fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
+                if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    for(int i=2;i<strlen(OPERAND)-1;i++){
+                        fprintf(outputStream, "%X", OPERAND[i]);
+                    }
+                    fprintf(outputStream, "\n");
+                }
+            }
+            else if(strcmp(OPCODE, "WORD") == 0){
+                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+            }
+            else if(instructionLength == 2){
+                int firstReg = 0;
+                int secondReg = 0;
+                if(OPERAND[1] == ','){
+                    if(strlen(OPERAND) == 3){
+                        if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[0]);
+                            return 1;
+                        }
+                        if(((secondReg = findRegValue(OPERAND[2])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[2]);
+                            return 1;
+                        }
+                    }
+                }
+                else if(strlen(OPERAND) == 1){
+                    if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                    else{
+                        printf("INVALID REGISTER : %c", OPERAND[0]);
+                        return 1;
+                    }
+                }
+                else{
+                    printf("INVALID 2 ADDRESS FORMAT");
+                    return 1;
+                }
+                fprintf(outputStream, "%s %s %s %s%d%d\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
@@ -331,7 +383,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
@@ -377,7 +429,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(lastThreeBits <= 0xFFFF){
                     fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
                 }
-                else if(lastThreeBits <= 0xFFFFF){
+                else{
                     fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
@@ -388,13 +440,58 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPCODE = intermediateLine[2];
             OPERAND = intermediateLine[3];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
+            if(strcmp(intermediateLine[2], "RESB") == 0){
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[2], "RESW") == 0){
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[2], "BYTE") == 0){
+                fprintf(outputStream, "%s %s %s %s ", ADDRESS, LABEL, OPCODE, OPERAND);
+                if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    for(int i=2;i<strlen(OPERAND)-1;i++){
+                        fprintf(outputStream, "%X", OPERAND[i]);
+                    }
+                    fprintf(outputStream, "\n");
+                }
+            }
+            if(strcmp(intermediateLine[2], "WORD") == 0){
+                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+            }
             if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+                int firstReg = 0;
+                int secondReg = 0;
+                if(OPERAND[1] == ','){
+                    if(strlen(OPERAND) == 3){
+                        if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[0]);
+                            return 1;
+                        }
+                        if(((secondReg = findRegValue(OPERAND[2])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[2]);
+                            return 1;
+                        }
+                    }
+                }
+                else if(strlen(OPERAND) == 1){
+                    if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                    else{
+                        printf("INVALID REGISTER : %c", OPERAND[0]);
+                        return 1;
+                    }
+                }
+                else{
+                    printf("INVALID 2 ADDRESS FORMAT");
+                    return 1;
+                }
+                fprintf(outputStream, "%s %s %s %s %s%d%d\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
@@ -437,7 +534,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
@@ -483,7 +580,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(lastThreeBits <= 0xFFFF){
                     fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
                 }
-                else if(lastThreeBits <= 0xFFFFF){
+                else{
                     fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
@@ -499,13 +596,58 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPCODE = intermediateLine[1];
             OPERAND = intermediateLine[2];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
+            if(strcmp(intermediateLine[1], "RESB") == 0){
+                fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[1], "RESW") == 0){
+                fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[1], "BYTE") == 0){
+                fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
+                if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    for(int i=2;i<strlen(OPERAND)-1;i++){
+                        fprintf(outputStream, "%X", OPERAND[i]);
+                    }
+                    fprintf(outputStream, "\n");
+                }
+            }
+            if(strcmp(intermediateLine[1], "WORD") == 0){
+                fprintf(outputStream, "%s %s %s %X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+            }
             if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+                int firstReg = 0;
+                int secondReg = 0;
+                if(OPERAND[1] == ','){
+                    if(strlen(OPERAND) == 3){
+                        if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[0]);
+                            return 1;
+                        }
+                        if(((secondReg = findRegValue(OPERAND[2])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[2]);
+                            return 1;
+                        }
+                    }
+                }
+                else if(strlen(OPERAND) == 1){
+                    if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                    else{
+                        printf("INVALID REGISTER : %c", OPERAND[0]);
+                        return 1;
+                    }
+                }
+                else{
+                    printf("INVALID 2 ADDRESS FORMAT");
+                    return 1;
+                }
+                fprintf(outputStream, "%s %s %s %s%d%d\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
@@ -549,7 +691,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
@@ -595,7 +737,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(lastThreeBits <= 0xFFFF){
                     fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
                 }
-                else if(lastThreeBits <= 0xFFFFF){
+                else{
                     fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
@@ -606,13 +748,58 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             OPCODE = intermediateLine[2];
             OPERAND = intermediateLine[3];
             int instructionLength = findInstructionLength(opcodes, OPCODE);
+            if(strcmp(intermediateLine[2], "RESB") == 0){
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[2], "RESW") == 0){
+                fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+            }
+            if(strcmp(intermediateLine[2], "BYTE") == 0){
+                fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
+                if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    for(int i=2;i<strlen(OPERAND)-1;i++){
+                        fprintf(outputStream, "%X", OPERAND[i]);
+                    }
+                    fprintf(outputStream, "\n");
+                }
+            }
+            if(strcmp(intermediateLine[2], "WORD") == 0){
+                fprintf(outputStream, "%s %s %s %s %X\n", ADDRESS, LABEL, OPCODE, OPERAND, atoi(OPERAND));
+            }
             if(instructionLength == 2){
-                fprintf(outputStream, "%s %s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE));
+                int firstReg = 0;
+                int secondReg = 0;
+                if(strlen(OPERAND) == 3){
+                    if(strlen(OPERAND) == 3){
+                        if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[0]);
+                            return 1;
+                        }
+                        if(((secondReg = findRegValue(OPERAND[2])) != -1)){}
+                        else{
+                            printf("INVALID REGISTER : %c", OPERAND[2]);
+                            return 1;
+                        }
+                    }
+                }
+                else if(strlen(OPERAND) == 1){
+                    if(((firstReg = findRegValue(OPERAND[0])) != -1)){}
+                    else{
+                        printf("INVALID REGISTER : %c", OPERAND[0]);
+                        return 1;
+                    }
+                }
+                else{
+                    printf("INVALID 2 ADDRESS FORMAT");
+                    return 1;
+                }
+                fprintf(outputStream, "%s %s %s %s %s%d%d\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
@@ -656,7 +843,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
                 currentOpcode[2] = '0';
-                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16);
+                int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
@@ -702,7 +889,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 else if(lastThreeBits <= 0xFFFF){
                     fprintf(outputStream, " %3X0%4X\n", firstThreeBits, lastThreeBits);
                 }
-                else if(lastThreeBits <= 0xFFFFF){
+                else{
                     fprintf(outputStream, " %3X%5X\n", firstThreeBits, lastThreeBits);
                 }
             }
@@ -908,7 +1095,7 @@ int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){
     if(head != NULL){
         SYMTAB* temp = head;
         do{
-            fprintf(symtabStream, "%s\t%X\n", temp->symbol, temp->locctr);
+            fprintf(symtabStream, "%s %X\n", temp->symbol, temp->locctr);
             temp = temp->next;
         }while(temp!= head);
     }
@@ -955,4 +1142,26 @@ bool checkNumber(char str[]){
         }
     }
     return true;
+}
+
+int findRegValue(char temp){
+    if(temp == 'A'){
+        return 0;
+    }
+    if(temp == 'X'){
+        return 1;
+    }
+    if(temp == 'B'){
+        return 3;
+    }
+    if(temp == 'S'){
+        return 4;
+    }
+    if(temp == 'T'){
+        return 5;
+    }
+    if(temp == 'F'){
+        return 6;
+    }
+    return -1;
 }

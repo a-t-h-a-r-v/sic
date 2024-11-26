@@ -26,8 +26,12 @@ typedef struct opcodeTable{
     struct opcodeTable *next;
 }OPTAB;
 
+typedef struct objectCode{
+    int address;
+}OBJECT;
+
 char* readNextLine(FILE* stream);
-int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* delimeter);
+int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* objectCodeFileName, const char* delimeter);
 int pass2(const char* intermediateFileName, const char* symtabFileName, const char* opcodeFileName, const char* outputFileName, const char* objectCodeFileName, const char* delimeter);
 int splitCodeLine(char* str, char codeLine[][20], const char *delimeter, int size);
 SYMTAB* createSymtab(char symbol[], int locctr);
@@ -47,5 +51,6 @@ bool checkNumber(char str[]);
 bool checkHex(char str[]);
 bool checkX(char str[]);
 char* tobinary(int n);
+int findRegValue(char temp);
 
 #endif

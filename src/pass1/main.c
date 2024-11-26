@@ -3,6 +3,7 @@
 int main(int argc, char *argv[]){
     char *opcodeFileName = "opcode";
     char *symtabFileName = "symtab";
+    char *objectFileName = "objectCode";
     char *delimeter = " ";
     if(argc < 3){
         printHelp(argv[0]);
@@ -42,6 +43,6 @@ int main(int argc, char *argv[]){
             }
         }
     }
-    pass1(codeFileName, outputFileName, opcodeFileName, symtabFileName, delimeter);
+    pass1(codeFileName, outputFileName, opcodeFileName, symtabFileName, objectFileName, delimeter);
     return 0;
 }
