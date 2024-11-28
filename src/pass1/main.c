@@ -24,6 +24,9 @@ int main(int argc, char *argv[]){
                 else if((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--symtab") == 0)){
                     symtabFileName = argv[i+1];
                 }
+                else if((strcmp(argv[i], "-O") == 0) || (strcmp(argv[i], "--object") == 0)){
+                    objectFileName = argv[i+1];
+                }
                 else if((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "--delimeter") == 0)){
                     if(strcmp(argv[i+1],"space") == 0){
                         delimeter = " ";

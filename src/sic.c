@@ -231,7 +231,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
 int pass2(const char* intermediateFileName, const char* symtabFileName, const char *opcodeFileName, const char* outputFileName, const char* objectCodeFileName, const char* delimeter){
     FILE *intermediateStream, *symtabStream, *outputStream, *objectCodeStream, *opcodeStream, *textLengthPointer;
-    char *temp, intermediateLine[4][20], *LABEL, *OPCODE, *OPERAND, *ADDRESS;
+    char *temp, intermediateLine[4][20], *LABEL, *OPCODE, *OPERAND, *ADDRESS, STARTINGADDRESS[20] = "0";
     int numOps = 0, textFlag = 0, textLength = 0;
     long textPosition;
     OPTAB *opcodes = NULL;
@@ -272,9 +272,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
     numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
     if((numOps == 3) && (strcmp(intermediateLine[1], "START") == 0)){
         fprintf(outputStream, "%s %s %s\n", intermediateLine[0], intermediateLine[1], intermediateLine[2]);
+        strcpy(STARTINGADDRESS, intermediateLine[2]);
     }
     else if((numOps == 4) && (strcmp(intermediateLine[2], "START") == 0)){
         fprintf(outputStream, "%s %s %s %s\n", intermediateLine[0], intermediateLine[1], intermediateLine[2], intermediateLine[3]);
+        strcpy(STARTINGADDRESS, intermediateLine[3]);
     }
     else{
         if(strcmp(intermediateLine[0], "BASE") == 0){}
@@ -286,11 +288,25 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(OPCODE, "RESB") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
             else if(strcmp(OPCODE, "RESW") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
@@ -365,7 +381,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
-                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -416,6 +431,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -467,11 +483,25 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(intermediateLine[2], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
             if(strcmp(intermediateLine[2], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
@@ -546,7 +576,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
-                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -589,6 +618,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -648,7 +678,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         OPERAND = intermediateLine[3];
     }
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 3 || numOps == 4)){
-        printf("%ld", textPosition);
         if(strcmp(intermediateLine[0], "BASE") == 0){}
         else if(numOps == 3){
             ADDRESS = intermediateLine[0];
@@ -659,10 +688,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             if(strcmp(intermediateLine[1], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
                 if(textFlag != 0){
+                    fflush(objectCodeStream);
                     textLengthPointer = fopen(objectCodeFileName, "r+");
-                    fseek(textLengthPointer, textPosition, 0);
-                    fprintf(textLengthPointer, "XZ");
-                    printf("%ld",textPosition);
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
                 }
                 textFlag = 0;
                 textLength = 0;
@@ -670,10 +700,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             if(strcmp(intermediateLine[1], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
                 if(textFlag != 0){
+                    fflush(objectCodeStream);
                     textLengthPointer = fopen(objectCodeFileName, "r+");
-                    fseek(textLengthPointer, textPosition, 0);
-                    fprintf(textLengthPointer, "XZ");
-                    printf("%ld",textPosition);
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
                 }
                 textFlag = 0;
                 textLength = 0;
@@ -749,7 +780,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
-                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -793,6 +823,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -844,11 +875,25 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(intermediateLine[2], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
             if(strcmp(intermediateLine[2], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    fflush(objectCodeStream);
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, SEEK_SET);
+                    fprintf(textLengthPointer, "%02X", textLength);
+                    textPosition = 0;
+                }
                 textFlag = 0;
                 textLength = 0;
             }
@@ -923,7 +968,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
-                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s %s", ADDRESS, LABEL, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -967,6 +1011,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 currentOpcode[2] = '0';
                 int firstThreeBits = (int)strtol(currentOpcode, NULL, 16) & 0xFFF;
                 int lastThreeBits = 0;
+                firstThreeBits = firstThreeBits | extended_mask;
                 fprintf(outputStream, "%s %s %s", ADDRESS, OPCODE, OPERAND);
                 if(OPERAND[0] == '@'){
                     firstThreeBits = firstThreeBits | indirect_mask;
@@ -1013,17 +1058,20 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         temp = readNextLine(intermediateStream);
         numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
     }
-    textLengthPointer = fopen(objectCodeFileName, "a+");
-    fprintf(textLengthPointer, "XZ");
-    fseek(textLengthPointer, textPosition, 0);
-    fprintf(textLengthPointer, "XZ");
-    printf("%ld",textPosition);
+    if(textFlag != 0){
+        fflush(objectCodeStream);
+        textLengthPointer = fopen(objectCodeFileName, "r+");
+        fseek(textLengthPointer, textPosition, SEEK_SET);
+        fprintf(textLengthPointer, "%02X", textLength);
+        textPosition = 0;
+    }
     if(numOps == 3){
         fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
     }
     else if(numOps == 4){
         fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
     }
+    fprintf(objectCodeStream, "\nE^%s", STARTINGADDRESS);
     return 1;
 }
 
