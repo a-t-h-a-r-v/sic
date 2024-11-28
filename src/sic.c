@@ -34,6 +34,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
     }
 
     readOpcodes(&opcodes, opcodeStream);
+    fprintf(objectCodeStream, "H^");
 
     temp = readNextLine(codeStream);
     numOps = splitCodeLine(temp, codeLine, delimeter, 3);
@@ -51,6 +52,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
         LABEL = codeLine[0];
         PROGRAMNAME = codeLine[0];
         STARTINGADDRESS = (int)strtol(OPERAND, NULL, 16);
+        fprintf(objectCodeStream, "%s", PROGRAMNAME);
         LOCCTR = STARTINGADDRESS;
         fprintf(outputStream, "%04X %s %s %s\n", LOCCTR, LABEL, OPCODE, OPERAND);
         numOfLines++;
@@ -219,7 +221,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
     printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
-    fprintf(objectCodeStream, "H^%s^%04X^%04X\n", PROGRAMNAME, STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
+    fprintf(objectCodeStream, "^%04X^%04X\n", STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
@@ -228,9 +230,10 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 }
 
 int pass2(const char* intermediateFileName, const char* symtabFileName, const char *opcodeFileName, const char* outputFileName, const char* objectCodeFileName, const char* delimeter){
-    FILE *intermediateStream, *symtabStream, *outputStream, *objectCodeStream, *opcodeStream;
+    FILE *intermediateStream, *symtabStream, *outputStream, *objectCodeStream, *opcodeStream, *textLengthPointer;
     char *temp, intermediateLine[4][20], *LABEL, *OPCODE, *OPERAND, *ADDRESS;
-    int numOps = 0;
+    int numOps = 0, textFlag = 0, textLength = 0;
+    long textPosition;
     OPTAB *opcodes = NULL;
     SYMTAB *symbols = NULL;
     intermediateStream = fopen(intermediateFileName, "r");
@@ -251,7 +254,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         return 1;
     }
 
-    objectCodeStream = fopen(objectCodeFileName, "w");
+    objectCodeStream = fopen(objectCodeFileName, "a");
     if(objectCodeStream == NULL){
         perror("Error opening object code file");
         return 1;
@@ -268,10 +271,10 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
     temp = readNextLine(intermediateStream);
     numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
     if((numOps == 3) && (strcmp(intermediateLine[1], "START") == 0)){
-        fprintf(outputStream, "%s %s %s", intermediateLine[0], intermediateLine[1], intermediateLine[2]);
+        fprintf(outputStream, "%s %s %s\n", intermediateLine[0], intermediateLine[1], intermediateLine[2]);
     }
     else if((numOps == 4) && (strcmp(intermediateLine[2], "START") == 0)){
-        fprintf(outputStream, "%s %s %s %s", intermediateLine[0], intermediateLine[1], intermediateLine[2], intermediateLine[3]);
+        fprintf(outputStream, "%s %s %s %s\n", intermediateLine[0], intermediateLine[1], intermediateLine[2], intermediateLine[3]);
     }
     else{
         if(strcmp(intermediateLine[0], "BASE") == 0){}
@@ -283,21 +286,41 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(OPCODE, "RESB") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             else if(strcmp(OPCODE, "RESW") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             else if(strcmp(OPCODE, "BYTE") == 0){
                 fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ");
+                    }
                     for(int i=2;i<strlen(OPERAND)-1;i++){
                         fprintf(outputStream, "%02X", OPERAND[i]);
+                        fprintf(objectCodeStream, "%02X", OPERAND[i]);
+                        textLength ++;
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             else if(strcmp(OPCODE, "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
+                textLength += 3;
             }
             else if(instructionLength == 2){
                 int firstReg = 0;
@@ -328,6 +351,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     return 1;
                 }
                 fprintf(outputStream, "%s %s %s %s%d%d\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                textLength += 2;
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -371,6 +402,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     }
                 }
                 fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
+                textLength += 3;
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -410,6 +449,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
                 fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
+                textLength += 4;
             }
         }
         else if(numOps == 4){
@@ -420,21 +467,41 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(intermediateLine[2], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[2], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[2], "BYTE") == 0){
                 fprintf(outputStream, "%s %s %s %s ", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ^");
+                }
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
                         fprintf(outputStream, "%02X", OPERAND[i]);
+                        fprintf(objectCodeStream, "%02X", OPERAND[i]);
+                        textLength++;
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%06X",atoi(OPERAND));
+                textLength += 3;
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -465,6 +532,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     return 1;
                 }
                 fprintf(outputStream, "%s %s %s %s %s%d%d\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%06X\n",atoi(OPERAND));
+                textLength += 2;
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -500,6 +575,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     }
                 }
                 fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(outputStream, "^%03X%03X", firstThreeBits, lastThreeBits);
+                textLength += 3;
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -539,12 +622,33 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
                 fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
+                textLength += 4;
             }
         }
     }
     temp = readNextLine(intermediateStream);
     numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
+    if(numOps == 3){
+        ADDRESS = intermediateLine[0];
+        LABEL = NULL;
+        OPCODE = intermediateLine[1];
+        OPERAND = intermediateLine[2];
+    }
+    else if(numOps == 4){
+        ADDRESS = intermediateLine[0];
+        LABEL = intermediateLine[1];
+        OPCODE = intermediateLine[2];
+        OPERAND = intermediateLine[3];
+    }
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 3 || numOps == 4)){
+        printf("%ld", textPosition);
         if(strcmp(intermediateLine[0], "BASE") == 0){}
         else if(numOps == 3){
             ADDRESS = intermediateLine[0];
@@ -554,21 +658,53 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(intermediateLine[1], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, 0);
+                    fprintf(textLengthPointer, "XZ");
+                    printf("%ld",textPosition);
+                }
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[1], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
+                if(textFlag != 0){
+                    textLengthPointer = fopen(objectCodeFileName, "r+");
+                    fseek(textLengthPointer, textPosition, 0);
+                    fprintf(textLengthPointer, "XZ");
+                    printf("%ld",textPosition);
+                }
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[1], "BYTE") == 0){
                 fprintf(outputStream, "%s %s %s ", ADDRESS, OPCODE, OPERAND);
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ^");
+                    }
                     for(int i=2;i<strlen(OPERAND)-1;i++){
                         fprintf(outputStream, "%02X", OPERAND[i]);
+                        fprintf(objectCodeStream, "%02X", OPERAND[i]);
+                        textLength++;
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[1], "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
+                textLength += 3;
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -599,6 +735,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     return 1;
                 }
                 fprintf(outputStream, "%s %s %s %s%d%d\n", ADDRESS, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                textLength += 2;
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -635,6 +779,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     }
                 }
                 fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
+                textLength += 3;
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -674,6 +826,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
                 fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^", ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
+                textLength += 4;
             }
         }
         else if(numOps == 4){
@@ -684,21 +844,41 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
             int instructionLength = findInstructionLength(opcodes, OPCODE);
             if(strcmp(intermediateLine[2], "RESB") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[2], "RESW") == 0){
                 fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
+                textFlag = 0;
+                textLength = 0;
             }
             if(strcmp(intermediateLine[2], "BYTE") == 0){
                 fprintf(outputStream, "%s %s %s %s ", ADDRESS, LABEL, OPCODE, OPERAND);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ^");
+                }
                 if((OPERAND[0] == 'C') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
                     for(int i=2;i<strlen(OPERAND)-1;i++){
                         fprintf(outputStream, "%02X", OPERAND[i]);
+                        fprintf(objectCodeStream, "%02X", OPERAND[i]);
+                        textLength++;
                     }
                     fprintf(outputStream, "\n");
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %s %06X\n", ADDRESS, LABEL, OPCODE, OPERAND, atoi(OPERAND));
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
+                textLength += 3;
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -729,6 +909,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     return 1;
                 }
                 fprintf(outputStream, "%s %s %s %s %s%d%d\n", ADDRESS, LABEL, OPCODE, OPERAND, findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ^");
+                }
+                fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
+                textLength += 2;
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -765,6 +953,14 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     }
                 }
                 fprintf(outputStream, " %03X%03X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
+                textLength += 3;
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -804,21 +1000,29 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                     lastThreeBits = findSymbolAddress(symbols, OPERAND);
                 }
                 fprintf(outputStream, " %03X%05X\n", firstThreeBits, lastThreeBits);
+                if(textFlag == 0){
+                    textFlag = 1;
+                    fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                    textPosition = ftell(objectCodeStream);
+                    fprintf(objectCodeStream, "  ");
+                }
+                fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
+                textLength += 4;
             }
         }
         temp = readNextLine(intermediateStream);
         numOps = splitCodeLine(temp, intermediateLine, delimeter, 4);
     }
-    if(strcmp(intermediateLine[0], "BASE") == 0){}
-    else if((numOps == 2) && findInstructionLength(opcodes, intermediateLine[1]) != -1){
-        char *temp1 = findOpcode(opcodes, intermediateLine[1]);
-        temp1[2] = '0';
-        printf("%d", (int)strtol(temp1, NULL, 16) | 32);
+    textLengthPointer = fopen(objectCodeFileName, "a+");
+    fprintf(textLengthPointer, "XZ");
+    fseek(textLengthPointer, textPosition, 0);
+    fprintf(textLengthPointer, "XZ");
+    printf("%ld",textPosition);
+    if(numOps == 3){
+        fprintf(outputStream, "%s %s %s\n", ADDRESS, OPCODE, OPERAND);
     }
-    else if((numOps == 3) && findInstructionLength(opcodes, intermediateLine[1]) != -1){
-        char *temp1 = findOpcode(opcodes, intermediateLine[1]);
-        temp1[2] = '0';
-        printf("%X%X", (int)strtol(temp1, NULL, 16) | 32, findSymbol(symbols, intermediateLine[2]));
+    else if(numOps == 4){
+        fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
     }
     return 1;
 }
