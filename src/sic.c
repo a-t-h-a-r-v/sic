@@ -677,7 +677,11 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         OPCODE = intermediateLine[2];
         OPERAND = intermediateLine[3];
     }
+    int completeLength;
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 3 || numOps == 4)){
+        if(ADDRESS != NULL){
+            completeLength = (int)strtol(ADDRESS, NULL, 16) - (int)strtol(STARTINGADDRESS, NULL, 16);
+        }
         if(strcmp(intermediateLine[0], "BASE") == 0){}
         else if(numOps == 3){
             ADDRESS = intermediateLine[0];
@@ -1072,6 +1076,7 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
     }
     fprintf(objectCodeStream, "\nE^%s", STARTINGADDRESS);
+    printf("\n%d\n", completeLength);
     return 1;
 }
 
@@ -1252,7 +1257,16 @@ void printHelp(char argv[]){
     printf("  -o, --opcode opcodeFile\t: Specifies the file for reading opcodes from.\n");
     printf("  -s, --symtab symtabFile\t: Specifies the file to write symbol table to.\n");
     printf("  -d, --delimeter delimeter\t: Prints this help message.\n");
-    printf("  -h, --help\t\t\t: Prints this help message.\n");
+    printf("  -h, --help help\t\t: Prints this help message.\n");
+}
+
+void printHelp2(char argv[]){
+    printf("Usage : %s INTERMEDIATEFILE OPCODEFILENAME SYMTABFILENAME [-optionType option]...\n", argv);
+    printf("Options:\n");
+    printf("  -i, --intermediate intermediateFile\t: Specifies the intermediate file.\n");
+    printf("  -0, --object objectFile\t\t: Specifies the object code file.\n");
+    printf("  -d, --delimeter delimeter\t\t: Prints this help message.\n");
+    printf("  -h, --help help\t\t\t: Prints this help message.\n");
 }
 
 int writeSymtabToFile(FILE* symtabStream, SYMTAB* head){

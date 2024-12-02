@@ -46,6 +46,7 @@ void readOpcodes(OPTAB** head, FILE* opcodeStream);
 void readSymtab(SYMTAB** head, FILE* symtabStream);
 bool checkComment(char codeLine[]);
 void printHelp(char argv[]);
+void printHelp2(char argv[]);
 int writeSymtabToFile(FILE* symtabStream, SYMTAB* head);
 bool checkNumber(char str[]);
 bool checkHex(char str[]);
