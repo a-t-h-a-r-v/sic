@@ -33,6 +33,7 @@ typedef struct objectCode{
 char* readNextLine(FILE* stream);
 int pass1(const char* codeFileName, const char* outputFileName, const char* opcodeFileName, const char* symtabFileName, const char* objectCodeFileName, const char* delimeter);
 int pass2(const char* intermediateFileName, const char* symtabFileName, const char* opcodeFileName, const char* outputFileName, const char* objectCodeFileName, const char* delimeter);
+int pass1Loader();
 int splitCodeLine(char* str, char codeLine[][20], const char *delimeter, int size);
 SYMTAB* createSymtab(char symbol[], int locctr);
 void insertSymbol(SYMTAB **head, char symbol[], int locctr);
@@ -53,5 +54,6 @@ bool checkHex(char str[]);
 bool checkX(char str[]);
 char* tobinary(int n);
 int findRegValue(char temp);
+int countDelimeters(char *str, char delimeter);
 
 #endif

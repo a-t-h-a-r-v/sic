@@ -1080,6 +1080,42 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
     return 1;
 }
 
+int pass1Loader(){
+    char PROGADDR[6], *temp, temp1[4][20];
+    int CSADDR, CSLTH = 0;
+    printf("Enter the program address : \n");
+    scanf("%s", PROGADDR);
+    CSADDR = (int)strtol(PROGADDR, NULL, 16);
+    printf("CSADDR : %X\n", CSADDR);
+
+    FILE *obj1 = fopen("obj1", "r");
+    if(obj1 == NULL){
+        perror("Error opening object 1 file");
+    }
+    FILE *ESTAB = fopen("ESTAB", "w");
+    if(ESTAB == NULL){
+        perror("Error opening ESTAB file");
+    }
+    temp = readNextLine(obj1);
+    while(temp != NULL){
+        if(temp[0] == 'H'){
+            CSADDR += CSLTH;
+            splitCodeLine(temp, temp1, "^", 4);
+            CSLTH = (int)strtol(temp1[3], NULL, 16);
+        }
+        else if(temp[0] == 'D'){
+            int count = countDelimeters(temp, '^');
+            char temp5[count + 1][20];
+            splitCodeLine(temp, temp5, "^", count+1);
+            for(int i=1;i<count;i+=2){
+                fprintf(ESTAB, "%s %X\n", temp5[i], CSADDR + (int)strtol(temp5[i+1], NULL, 16));
+            }
+        }
+        temp = readNextLine(obj1);
+    }
+    return 0;
+}
+
 char* readNextLine(FILE* stream){
     char *temp = malloc(100);
     if(fgets(temp, 100, stream) != NULL){
@@ -1342,4 +1378,14 @@ int findRegValue(char temp){
         return 6;
     }
     return -1;
+}
+
+int countDelimeters(char *str, char delimeter){
+    int count = 0;
+    for(int i=0;i<strlen(str);i++){
+        if(str[i] == delimeter){
+            count++;
+        }
+    }
+    return count;
 }
