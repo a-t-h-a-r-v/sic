@@ -677,10 +677,8 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         OPCODE = intermediateLine[2];
         OPERAND = intermediateLine[3];
     }
-    int completeLength;
     while((strcmp(OPCODE, "END") != 0) && temp != NULL && (numOps == 3 || numOps == 4)){
         if(ADDRESS != NULL){
-            completeLength = (int)strtol(ADDRESS, NULL, 16) - (int)strtol(STARTINGADDRESS, NULL, 16);
         }
         if(strcmp(intermediateLine[0], "BASE") == 0){}
         else if(numOps == 3){
@@ -1076,7 +1074,6 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
         fprintf(outputStream, "%s %s %s %s\n", ADDRESS, LABEL, OPCODE, OPERAND);
     }
     fprintf(objectCodeStream, "\nE^%s", STARTINGADDRESS);
-    printf("\n%d\n", completeLength);
     return 1;
 }
 
