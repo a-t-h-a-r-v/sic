@@ -221,7 +221,7 @@ int pass1(const char* codeFileName, const char* outputFileName, const char* opco
 
     printf("%d lines written in %s \n", numOfLines, outputFileName);
     printf("Program Length : %d\n", LOCCTR - STARTINGADDRESS);
-    fprintf(objectCodeStream, "^%04X^%04X\n", STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
+    fprintf(objectCodeStream, "^%04X^%04X", STARTINGADDRESS, LOCCTR - STARTINGADDRESS);
 
     fclose(codeStream);
     fclose(outputStream);
@@ -325,6 +325,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         textLength ++;
                     }
                     fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
                 }
             }
             else if(strcmp(OPCODE, "WORD") == 0){
@@ -337,6 +348,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 2){
                 int firstReg = 0;
@@ -375,6 +397,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
                 textLength += 2;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -425,6 +458,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -473,6 +517,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
                 textLength += 4;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
         }
         else if(numOps == 4){
@@ -520,6 +575,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         textLength++;
                     }
                     fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
@@ -532,6 +598,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%06X",atoi(OPERAND));
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -570,6 +647,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%06X\n",atoi(OPERAND));
                 textLength += 2;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -612,6 +700,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(outputStream, "^%03X%03X", firstThreeBits, lastThreeBits);
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -660,6 +759,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
                 textLength += 4;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
         }
     }
@@ -726,6 +836,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         textLength++;
                     }
                     fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
                 }
             }
             if(strcmp(intermediateLine[1], "WORD") == 0){
@@ -738,6 +859,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -776,6 +908,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
                 textLength += 2;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -819,6 +962,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -867,6 +1021,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
                 textLength += 4;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
         }
         else if(numOps == 4){
@@ -914,6 +1079,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         textLength++;
                     }
                     fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
                 }
             }
             if(strcmp(intermediateLine[2], "WORD") == 0){
@@ -926,6 +1102,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%06X", atoi(OPERAND));
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             if(instructionLength == 2){
                 int firstReg = 0;
@@ -964,6 +1151,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%s%d%d", findOpcode(opcodes, OPCODE), firstReg, secondReg);
                 textLength += 2;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 3){
                 char *currentOpcode = findOpcode(opcodes, OPCODE);
@@ -1007,6 +1205,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%03X", firstThreeBits, lastThreeBits);
                 textLength += 3;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
             else if(instructionLength == 4){
                 char *currentOpcode = findOpcode(opcodes, strtok(OPCODE, "+"));
@@ -1055,6 +1264,17 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                 }
                 fprintf(objectCodeStream, "^%03X%05X", firstThreeBits, lastThreeBits);
                 textLength += 4;
+                if(textLength > 60){
+                    if(textFlag != 0){
+                        fflush(objectCodeStream);
+                        textLengthPointer = fopen(objectCodeFileName, "r+");
+                        fseek(textLengthPointer, textPosition, SEEK_SET);
+                        fprintf(textLengthPointer, "%02X", textLength);
+                        textPosition = 0;
+                        textFlag = 0;
+                        textLength = 0;
+                    }
+                }
             }
         }
         temp = readNextLine(intermediateStream);

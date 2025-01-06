@@ -55,5 +55,6 @@ bool checkX(char str[]);
 char* tobinary(int n);
 int findRegValue(char temp);
 int countDelimeters(char *str, char delimeter);
+int hex_to_int(const char *input_string);
 
 #endif
