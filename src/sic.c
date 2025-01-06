@@ -337,6 +337,30 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         }
                     }
                 }
+                else if((OPERAND[0] == 'X') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ");
+                    }
+                    int tempHex = hex_to_int(OPERAND);
+                    fprintf(outputStream, "%02X", tempHex);
+                    fprintf(objectCodeStream, "%02X", tempHex);
+                    textLength += 3;
+                    fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
+                }
             }
             else if(strcmp(OPCODE, "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
@@ -574,6 +598,30 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         fprintf(objectCodeStream, "%02X", OPERAND[i]);
                         textLength++;
                     }
+                    fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
+                }
+                else if((OPERAND[0] == 'X') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ");
+                    }
+                    int tempHex = hex_to_int(OPERAND);
+                    fprintf(outputStream, "%02X", tempHex);
+                    fprintf(objectCodeStream, "%02X", tempHex);
+                    textLength += 3;
                     fprintf(outputStream, "\n");
                     if(textLength > 60){
                         if(textFlag != 0){
@@ -848,6 +896,30 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         }
                     }
                 }
+                else if((OPERAND[0] == 'X') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ");
+                    }
+                    int tempHex = hex_to_int(OPERAND);
+                    fprintf(outputStream, "%02X", tempHex);
+                    fprintf(objectCodeStream, "%02X", tempHex);
+                    textLength += 3;
+                    fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
+                }
             }
             if(strcmp(intermediateLine[1], "WORD") == 0){
                 fprintf(outputStream, "%s %s %s %06X\n", ADDRESS, OPCODE, OPERAND, atoi(OPERAND));
@@ -1078,6 +1150,30 @@ int pass2(const char* intermediateFileName, const char* symtabFileName, const ch
                         fprintf(objectCodeStream, "%02X", OPERAND[i]);
                         textLength++;
                     }
+                    fprintf(outputStream, "\n");
+                    if(textLength > 60){
+                        if(textFlag != 0){
+                            fflush(objectCodeStream);
+                            textLengthPointer = fopen(objectCodeFileName, "r+");
+                            fseek(textLengthPointer, textPosition, SEEK_SET);
+                            fprintf(textLengthPointer, "%02X", textLength);
+                            textPosition = 0;
+                            textFlag = 0;
+                            textLength = 0;
+                        }
+                    }
+                }
+                else if((OPERAND[0] == 'X') && (OPERAND[1] == 39) && (OPERAND[strlen(OPERAND) - 1] == 39)){
+                    if(textFlag == 0){
+                        textFlag = 1;
+                        fprintf(objectCodeStream, "\nT^%s^",ADDRESS);
+                        textPosition = ftell(objectCodeStream);
+                        fprintf(objectCodeStream, "  ");
+                    }
+                    int tempHex = hex_to_int(OPERAND);
+                    fprintf(outputStream, "%02X", tempHex);
+                    fprintf(objectCodeStream, "%02X", tempHex);
+                    textLength += 3;
                     fprintf(outputStream, "\n");
                     if(textLength > 60){
                         if(textFlag != 0){
@@ -1605,4 +1701,16 @@ int countDelimeters(char *str, char delimeter){
         }
     }
     return count;
+}
+
+int hex_to_int(const char *input_string) {
+    if (strncmp(input_string, "X'", 2) == 0 && input_string[strlen(input_string) - 1] == '\'') {
+        char hex_part[100];
+        strncpy(hex_part, input_string + 2, strlen(input_string) - 3);
+        hex_part[strlen(input_string) - 3] = '\0';
+        return (int)strtol(hex_part, NULL, 16);
+    } else {
+        fprintf(stderr, "Invalid format.\n");
+        return -1;
+    }
 }
