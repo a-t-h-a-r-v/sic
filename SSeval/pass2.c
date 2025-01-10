@@ -3,8 +3,8 @@
 #include<string.h>
 #include<stdbool.h>
 
-#define indirect_mask 32
-#define immediate_mask 16
+#define indirect_mask 2
+#define immediate_mask 1
 #define index_mask 8
 #define base_mask 4
 #define program_counter_mask 2
@@ -75,11 +75,8 @@ bool checkX(char OPERAND[]){
 int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2[], char objectCode[]){
     char *ADDRESS, *LABEL, *OPCODE, *OPERAND, STARTING_ADDRESS[25], instruction[4][25], line[100];
     FILE *intermediate1File, *opcodeFile, *symbolTableFile, *intermediate2File, *objectCodeFile, *tempObjectCodeFile;
-    int instructionIndex = 0;
-    long headerPosition = 0;
-    long textPosition = 0;
-    int textLength = 0;
-    int programLength = 0;
+    int instructionIndex = 0,textLength = 0,programLength = 0;
+    long headerPosition = 0,textPosition = 0;
     bool text = false;
     intermediate1File = fopen(intermediate1, "r");
     if (intermediate1File == NULL) {
@@ -131,12 +128,7 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
             ADDRESS = instruction[0];
             OPCODE = instruction[1];
         }
-        int firstTwoDigits = findOpcode(OPCODE);
-        int instructionFormat = findFormat(OPCODE);
-        int thirdDigit = 0;
-        int twoFormatLastTwoDigits = 0;
-        int lastThreeDigits = 0;
-        int lastFiveDigits = 0;
+        int firstTwoDigits = findOpcode(OPCODE), instructionFormat = findFormat(OPCODE), thirdDigit = 0, twoFormatLastTwoDigits = 0, lastThreeDigits = 0, lastFiveDigits = 0;
         if(strcmp(OPCODE, "START") == 0){
             strcpy(STARTING_ADDRESS, ADDRESS);
             fprintf(objectCodeFile, "H^%-6s^%-6s^  ", LABEL, ADDRESS);
@@ -261,12 +253,15 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
                 if(lastThreeDigits == -1){
                     lastThreeDigits = atoi(OPERAND+1);
                 }
-            } else if(OPERAND[0] == '#'){ firstTwoDigits = firstTwoDigits | immediate_mask;
+            } else if(OPERAND[0] == '#'){ 
+                firstTwoDigits = firstTwoDigits | immediate_mask;
                 lastThreeDigits = findSymbol(OPERAND+1);
                 if(lastThreeDigits == -1){
                     lastThreeDigits = atoi(OPERAND+1);
                 }
             } else{
+                firstTwoDigits = firstTwoDigits | immediate_mask;
+                firstTwoDigits = firstTwoDigits | indirect_mask;
                 thirdDigit = thirdDigit | program_counter_mask;
                 lastThreeDigits = findSymbol(OPERAND);
                 if(lastThreeDigits == -1){
@@ -274,6 +269,8 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
                     return EXIT_FAILURE;
                 }
                 lastThreeDigits = lastThreeDigits - ((int)strtol(ADDRESS, NULL, 16) + instructionFormat);
+                lastThreeDigits = abs(lastThreeDigits);
+                lastThreeDigits &= 0xFFF;
             }
             if(checkX(OPERAND))
                 thirdDigit = thirdDigit | index_mask;
@@ -294,10 +291,15 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
                 firstTwoDigits = firstTwoDigits | immediate_mask;
                 lastFiveDigits = findSymbol(OPERAND+1);
             }
+            else{
+                firstTwoDigits = firstTwoDigits | indirect_mask;
+                firstTwoDigits = firstTwoDigits | immediate_mask;
+                lastFiveDigits = findSymbol(OPERAND);
+            }
+            lastFiveDigits &= 0xFFFFF;
             thirdDigit = thirdDigit | extended_mask;
             if(checkX(OPERAND))
                 thirdDigit = thirdDigit | index_mask;
-            lastFiveDigits = findSymbol(OPERAND);
             fprintf(objectCodeFile, "^%02X%01X%05X", firstTwoDigits, thirdDigit, lastFiveDigits);
             fprintf(intermediate2File, "%s %s %s %s %02X%01X%05X\n", ADDRESS ? ADDRESS : "", LABEL ? LABEL : "", OPCODE ? OPCODE : "", OPERAND ? OPERAND : "", firstTwoDigits, thirdDigit, lastFiveDigits);
         }
