@@ -269,8 +269,8 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
                     return EXIT_FAILURE;
                 }
                 lastThreeDigits = lastThreeDigits - ((int)strtol(ADDRESS, NULL, 16) + instructionFormat);
-                lastThreeDigits = abs(lastThreeDigits);
-                lastThreeDigits &= 0xFFF;
+                if (lastThreeDigits < 0)
+                    lastThreeDigits = (lastThreeDigits & 0xFFF);
             }
             if(checkX(OPERAND))
                 thirdDigit = thirdDigit | index_mask;
