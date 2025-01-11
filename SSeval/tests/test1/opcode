@@ -1,4 +1,4 @@
 LDA     00      3
-MUL     20      3
-DIV     24      3
+ADD     18      3
+SUB     1C      3
 STA     0C      3

@@ -1,0 +1,10 @@
+COPY    START   1000
+FIRST   LDA     ALPHA
+        ADD     BETA
+        SUB     GAMMA
+        STA     RESULT
+ALPHA   RESW    1
+BETA    WORD    10
+GAMMA   RESB    3
+RESULT  RESW    1
+        END     FIRST

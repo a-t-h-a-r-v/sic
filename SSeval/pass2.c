@@ -175,6 +175,7 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
             fprintf(objectCodeFile, "^%06X", value);
             fprintf(intermediate2File, "%s %s %s %s %06X\n", ADDRESS ? ADDRESS : "", LABEL ? LABEL : "", OPCODE ? OPCODE : "", OPERAND ? OPERAND : "",value);
         } else if (strcmp(OPCODE, "RESW") == 0) {
+            textLength += 3*atoi(OPERAND);
             if(text){
                 fflush(objectCodeFile);
                 fseek(tempObjectCodeFile, textPosition, SEEK_SET);
@@ -182,9 +183,9 @@ int pass2(char intermediate1[], char opcode[], char symtab[], char intermediate2
                 programLength += textLength;
                 text = false;
             }
-            int reservedWords = atoi(OPERAND);
             fprintf(intermediate2File, "%s %s %s %s\n", ADDRESS ? ADDRESS : "", LABEL ? LABEL : "", OPCODE ? OPCODE : "", OPERAND ? OPERAND : "");
         } else if (strcmp(OPCODE, "RESB") == 0) {
+            textLength += atoi(OPERAND);
             if(text){
                 fflush(objectCodeFile);
                 fseek(tempObjectCodeFile, textPosition, SEEK_SET);

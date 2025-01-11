@@ -1,0 +1,6 @@
+LDX     04      3
+LDA     00      3
+ADD     18      3
+STA     0C      3
+TIX     2C      3
+JLT     38      3

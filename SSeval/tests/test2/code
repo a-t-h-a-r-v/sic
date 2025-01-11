@@ -1,0 +1,11 @@
+SUMPGM  START   2000
+        LDX     ZERO
+LOOP    LDA     NUM
+        ADD     TOTAL
+        STA     TOTAL
+        TIX     LOOP
+        JLT     LOOP
+NUM     WORD    5
+ZERO    WORD    0
+TOTAL   RESW    1
+        END     SUMPGM
